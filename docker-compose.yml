@@ -1,0 +1,75 @@
+---
+version: "2.0"
+services:
+    nginx:
+        image: nginx
+        ports:
+            - '80:80'
+        volumes:
+            - ./nginx:/etc/nginx/conf.d
+            - ./logs/nginx:/var/log/nginx
+            - ./wp:/var/www/html
+        links:
+           - wp     
+        restart: always
+
+    nginx-exporter:
+        image: fish/nginx-exporter
+        links: 
+          - nginx
+        command: -nginx.scrape_uri=${SCRAPE_URI}
+        restart: always
+
+    mysql:
+        image: mariadb
+        volumes:
+            - ./db:/var/lib/mysql
+        environment:
+            - MYSQL_ROOT_PASSWORD
+        restart: always
+        
+    wp:
+        image: wordpress:4.7.1-php7.0-fpm
+        volumes:
+            - ./wp:/var/www/html
+        environment:
+            - WORDPRESS_DB_NAME
+            - WORDPRESS_TABLE_PREFIX
+            - WORDPRESS_DB_HOST
+            - WORDPRESS_DB_PASSWORD
+        links:
+            - mysql
+        restart: always
+        
+    mysql-exporter:
+        image: prom/mysqld-exporter
+        links:
+            - mysql
+        environment:
+            - DATA_SOURCE_NAME
+        restart: always
+        
+    prom:
+        image: openshift/prometheus
+        volumes:
+            - ./prometheus/data/:/prometheus
+            - ./prometheus/config/:/etc/prometheus
+        links:
+            - mysql-exporter
+            - nginx-exporter
+        restart: always
+        
+    graphana:
+        image: grafana/grafana
+        ports:
+            - '3000:3000'
+        volumes:
+            - ./graphana/data:/var/lib/grafana
+        links:
+            - prom
+        environment:
+            - GF_SECURITY_ADMIN_PASSWORD
+        restart: always
+        
+    
+
