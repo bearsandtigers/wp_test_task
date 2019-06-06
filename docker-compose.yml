@@ -29,9 +29,13 @@ services:
         restart: always
         
     wp:
-        image: wordpress:4.7.1-php7.0-fpm
+        build:
+            context: ./wp_with_mail_docker_image
         volumes:
             - ./wp:/var/www/html
+            - ./wp_with_mail_docker_image/mail.ini:/usr/local/etc/php/conf.d/mail.ini
+            - ./wp_with_mail_docker_image/ssmtp.conf:/etc/ssmtp/ssmtp.conf
+            - ./wp_with_mail_docker_image/revaliases:/etc/ssmtp/revaliases
         environment:
             - WORDPRESS_DB_NAME
             - WORDPRESS_TABLE_PREFIX
